@@ -4,10 +4,8 @@
   "version": "0.0.0",
   "scripts": {
     "patch": "node scripts/patch-observer-stack.mjs",
-    "predev": "node scripts/patch-observer-stack.mjs",
-    "dev": "next dev --port 9021",
-    "prebuild": "node scripts/patch-observer-stack.mjs",
-    "build": "next build",
+    "dev": "node scripts/patch-observer-stack.mjs && next dev --port 9021",
+    "build": "node scripts/patch-observer-stack.mjs && next build",
     "start": "next start --port 9021",
     "postinstall": "node scripts/patch-observer-stack.mjs"
   },

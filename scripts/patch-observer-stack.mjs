@@ -4,22 +4,41 @@
 // registered by copy A and a popover opened by copy B never coordinate and the popover
 // gets stuck `inert`. Sharing the stack across copies fixes the nesting coordination.
 //
-// This mirrors what an upstream fix could do (store the stack somewhere shared instead
-// of in module scope). It's applied via `postinstall` so it survives `npm install`.
+// Pure Node.js (no `find`, no shell) so it also runs in restricted environments like
+// StackBlitz WebContainers. Applied via postinstall / predev / prebuild.
 
-import { readFileSync, writeFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 const GLOBAL =
   "(globalThis.__reactAriaSharedObserverStack || (globalThis.__reactAriaSharedObserverStack = []))";
 
-const files = execSync(
-  "find node_modules -path '*react-aria/dist/private/overlays/ariaHideOutside.*' ! -name '*.map'",
-  { encoding: "utf8" },
-)
-  .trim()
-  .split("\n")
-  .filter(Boolean);
+const TARGETS = new Set([
+  "ariaHideOutside.js",
+  "ariaHideOutside.mjs",
+  "ariaHideOutside.cjs",
+]);
+const PATH_MARKER = ["react-aria", "dist", "private", "overlays"].join("/");
+
+function collect(dir, out) {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return; // unreadable dir, skip
+  }
+  for (const entry of entries) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collect(full, out);
+    } else if (TARGETS.has(entry.name) && full.replace(/\\/g, "/").includes(PATH_MARKER)) {
+      out.push(full);
+    }
+  }
+}
+
+const files = [];
+collect("node_modules", files);
 
 let patched = 0;
 for (const file of files) {
@@ -27,7 +46,7 @@ for (const file of files) {
   if (src.includes("__reactAriaSharedObserverStack")) continue;
 
   // Replace the module-scope initializer `<var>observerStack = []` (declaration only;
-  // all other references are mutations like .push/.pop/.splice, which now hit the shared array).
+  // every other reference is a mutation like .push/.pop/.splice on the same array).
   const re = /([A-Za-z0-9_$]*observerStack)\s*=\s*\[\]/;
   if (!re.test(src)) continue;
 

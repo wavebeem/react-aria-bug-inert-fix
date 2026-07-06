@@ -28,7 +28,9 @@ so when the popover opens, the modal's observer is correctly disconnected and ne
 the popover `inert`. (`push`/`pop`/`splice` mutate the shared array; the reference is never
 reassigned, so aliasing the module var to the global is sufficient.)
 
-The patch runs on `postinstall`, `predev`, and `prebuild` so it is always applied.
+The `dev` and `build` scripts run the patch **inline** (`node scripts/... && next ...`) so it
+applies even where npm lifecycle hooks are disabled (`ignore-scripts`). It's pure Node.js (no
+`find`/shell) so it also works in StackBlitz WebContainers.
 
 ## Run
 
