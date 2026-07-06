@@ -28,8 +28,9 @@ so when the popover opens, the modal's observer is correctly disconnected and ne
 the popover `inert`. (`push`/`pop`/`splice` mutate the shared array; the reference is never
 reassigned, so aliasing the module var to the global is sufficient.)
 
-The `dev` and `build` scripts run the patch **inline** (`node scripts/... && next ...`) so it
-applies even where npm lifecycle hooks are disabled (`ignore-scripts`). It's pure Node.js (no
+The patch is invoked from **`next.config.mjs`** (`import "./scripts/patch-observer-stack.mjs"`),
+which Next loads on every boot — so it runs regardless of how Next is started (`npx next dev`,
+`npm run dev`, `next build`) and doesn't depend on npm lifecycle hooks. It's pure Node.js (no
 `find`/shell) so it also works in StackBlitz WebContainers.
 
 ## Run
@@ -51,5 +52,5 @@ being exactly one copy of the module in the bundle.
 
 ## Versions
 
-- next 16.2.6, react 18.3.1
+- next 15.5.20 (webpack), react 18.3.1
 - react-aria 3.50.0, react-aria-components 1.17.0 (→ react-aria 3.48.0)
